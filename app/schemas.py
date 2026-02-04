@@ -49,3 +49,10 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     users : list[UserPublic]
     count : int
+
+class UserUpdate(UserBase):
+    email: EmailStr | None = None
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+    full_name: str | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
