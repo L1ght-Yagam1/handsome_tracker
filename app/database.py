@@ -6,7 +6,3 @@ SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://postgres:masterkey@localhost:543
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
-
-async def get_db():
-    async with async_session_maker() as session:
-        yield session  # Отдает сессию и закроет её после обработки запроса

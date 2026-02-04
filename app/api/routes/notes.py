@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import database, schemas
 from app.crud import note
 from typing import List
+from app.api.deps import SessionDep, TokenDep
 
 router = APIRouter(
     prefix="/notes",
@@ -13,12 +14,12 @@ router = APIRouter(
 @router.post("/", response_model=schemas.NotePublic)
 async def create_note(
     note_in: schemas.NoteCreate,
-    db: AsyncSession = Depends(database.get_db)
+    db: SessionDep
 ):
     return await note.create_note(db, note_in, 1)
 
 @router.get("/", response_model=List[schemas.NotePublic])
-async def read_notes(db: AsyncSession = Depends(database.get_db)):
+async def read_notes(db: SessionDep):
     notes = await note.get_notes(db)
     return notes
 
@@ -26,7 +27,7 @@ async def read_notes(db: AsyncSession = Depends(database.get_db)):
 async def patch_note(
     note_id: int,
     note_in: schemas.NoteUpdate,
-    db: AsyncSession = Depends(database.get_db)
+    db: SessionDep
 ):
     db_note = await note.update_note(db, note_id, note_in)
     if not db_note:
@@ -37,7 +38,7 @@ async def patch_note(
 async def replace_note(
     note_id: int,
     note_in: schemas.NoteCreate,
-    db: AsyncSession = Depends(database.get_db)
+    db: SessionDep
 ):
     db_note = await note.update_note(db, note_id, note_in)
     if not db_note:
@@ -47,7 +48,7 @@ async def replace_note(
 @router.delete("/{note_id}", response_model=schemas.NotePublic)
 async def delete_note(
     note_id: int,
-    db: AsyncSession = Depends(database.get_db)
+    db: SessionDep
 ):
     db_note = await note.delete_note(db, note_id)
     if not db_note:
