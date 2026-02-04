@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import notes
+from app.api.routes import notes, users
 from dotenv import load_dotenv
 import os
 
@@ -11,3 +11,4 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 app = FastAPI()
 
 app.include_router(notes.router)
+app.include_router(users.router)
