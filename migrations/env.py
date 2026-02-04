@@ -14,7 +14,8 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
-from app.models import Note  # Импортируй все модели здесь для Alembic
+# Import all models here for Alembic
+from app.models import Note
 
 
 # this is the Alembic Config object, which provides

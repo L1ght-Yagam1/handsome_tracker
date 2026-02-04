@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 from app import database, schemas
 from app import crud
 from typing import List
-from app import models
-from sqlmodel import select
 
 router = APIRouter(
     prefix="/notes",

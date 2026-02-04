@@ -8,6 +8,6 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-app = FastAPI(prefix="/api/v1")
+app = FastAPI()
 
 app.include_router(notes.router)
