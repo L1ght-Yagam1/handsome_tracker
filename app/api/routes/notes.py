@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app import database, schemas
+from app import schemas
 from app.crud import note
 from typing import List
-from app.api.deps import SessionDep, TokenDep
+from app.api.deps import SessionDep
 
 router = APIRouter(
     prefix="/notes",

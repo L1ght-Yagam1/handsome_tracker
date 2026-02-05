@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import engine
+from app.core.db import engine
 from fastapi import Depends, HTTPException, status
 
 from fastapi.security import OAuth2PasswordBearer
