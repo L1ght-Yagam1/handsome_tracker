@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
 from app.schemas import UserCreate, UsersPublic, UserUpdate
 from sqlmodel import select, func, col
-from app.utils import get_password_hash
+from app.utils import get_password_hash, verify_password
 from app import models
 from fastapi import HTTPException
 
@@ -18,6 +18,19 @@ async def get_current_user(id: int, db: AsyncSession):
     statement = select(User).where(User.id == id)
     result = await db.execute(statement)
     return result.scalars().first()
+
+async def get_user_by_email(session: AsyncSession, email: str):
+    statement = select(User).where(User.email == email)
+    result = await session.execute(statement)
+    return result.scalars().first()
+
+async def authenticate_user(session: AsyncSession, email: str, password: str):
+    db_user = await get_user_by_email(session, email=email)
+    if not db_user:
+        return None
+    if not verify_password(password, db_user.hashed_password):
+        return None
+    return db_user
 
 async def get_users(session: AsyncSession, skip: int = 0, limit: int = 100):
     # 1. Считаем количество

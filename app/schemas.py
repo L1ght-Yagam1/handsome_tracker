@@ -2,6 +2,11 @@ from sqlmodel import SQLModel, Field
 from datetime import datetime
 from pydantic import EmailStr
 
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str
+
 # Common fields for Note
 class NoteBase(SQLModel):
     title : str = Field(max_length=255)
@@ -19,7 +24,7 @@ class NotePublic(NoteBase):
     class Config:
         from_attributes = True
 
-class NotesPublic(NoteBase):
+class NotesPublic(SQLModel):
     notes : list[NotePublic]
     count : int
 

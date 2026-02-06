@@ -9,12 +9,22 @@ router = APIRouter(
     tags=["users"]
 )
 
-@router.post("/", response_model=schemas.UserPublic)
-async def create_user(
-    user_in: schemas.UserCreate,
-    db: SessionDep
-):
-    return await user.create_user(db, user_in)
+@router.post("/", response_model=schemas.UserPublic, status_code=201)
+async def create_user_account(
+    user_creation_params: schemas.UserCreate,
+    db_session: SessionDep
+    ):
+    """
+    Creates a new user account.
+
+    Args:
+        user_creation_params (schemas.UserCreate): The parameters required to create a new user account.
+        db_session (SessionDep): An asynchronous database session.
+
+    Returns:
+        schemas.UserPublic: The created user account.
+    """
+    return await user.create_user(db_session, user_creation_params)
 
 @router.get("/{user_id}", response_model=schemas.UserPublic)
 async def read_user(

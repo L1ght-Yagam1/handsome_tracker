@@ -16,3 +16,14 @@ def get_datetime_utc() -> datetime:
 
 def get_password_hash(password: str) -> str:
     return password_hash.hash(password)
+
+# Проверка пароля
+def verify_password(password: str, hashed_password: str) -> bool:
+    """
+    Verify a password against a hashed password.
+
+    :param password: The password to verify
+    :param hashed_password: The hashed password to verify against
+    :return: Whether the password is valid
+    """
+    return password_hash.verify(password, hashed_password)
