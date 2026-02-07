@@ -51,3 +51,13 @@ async def get_current_user(db: SessionDep, token: TokenDep) -> User:
     return db_user
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+async def get_current_active_superuser(current_user: CurrentUserDep) -> User:
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="The user doesn't have enough privileges"
+        )
+    return current_user
+
+AdminDep = Annotated[User, Depends(get_current_active_superuser)]
