@@ -41,7 +41,7 @@ async def get_current_user(db: SessionDep, token: TokenDep) -> User:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    db_user = await user.get_current_user(user_id, db)
+    db_user = await user.get_user_by_id(user_id, db)
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

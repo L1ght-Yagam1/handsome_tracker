@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
-from app.schemas import UserCreate, UsersPublic, UserUpdate
+from app.schemas import UserCreate, UsersPublic, UserUpdate, UserReplace
 from sqlmodel import select, func, col
 from app.utils import get_password_hash, verify_password
 from app import models
@@ -13,7 +13,7 @@ async def create_user(session: AsyncSession, user_in: UserCreate):
     await session.refresh(db_user)
     return db_user
 
-async def get_current_user(id: int, db: AsyncSession):
+async def get_user_by_id(id: int, db: AsyncSession):
     # В асинхронности используем await db.exec(...)
     statement = select(User).where(User.id == id)
     result = await db.execute(statement)
@@ -61,6 +61,61 @@ async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
 
     db_user.sqlmodel_update(update_data)
 
+    session.add(db_user)
+    await session.commit()
+    await session.refresh(db_user)
+    return db_user
+
+async def replace_user(session: AsyncSession, user_id: int, user_in: UserReplace):
+    db_user = await session.get(models.User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_data = user_in.model_dump(exclude_unset=False)
+
+    if update_data.get("password") is None:
+        update_data.pop("password", None)
+    else:
+        hashed_password = get_password_hash(update_data["password"])
+        update_data["hashed_password"] = hashed_password
+        del update_data["password"]
+
+    db_user.sqlmodel_update(update_data)
+
+    session.add(db_user)
+    await session.commit()
+    await session.refresh(db_user)
+    return db_user
+
+async def change_password_for_user(
+    session: AsyncSession,
+    user_id: int,
+    current_password: str,
+    new_password: str
+):
+    db_user = await session.get(models.User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(current_password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    db_user.hashed_password = get_password_hash(new_password)
+    session.add(db_user)
+    await session.commit()
+    await session.refresh(db_user)
+    return db_user
+
+async def set_password_for_user(
+    session: AsyncSession,
+    user_id: int,
+    new_password: str
+):
+    db_user = await session.get(models.User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.hashed_password = get_password_hash(new_password)
     session.add(db_user)
     await session.commit()
     await session.refresh(db_user)

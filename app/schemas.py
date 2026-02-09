@@ -61,3 +61,17 @@ class UserUpdate(UserBase):
     is_superuser: bool | None = None
     full_name: str | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
+
+class UserReplace(SQLModel):
+    email: EmailStr
+    is_active: bool
+    is_superuser: bool
+    full_name: str | None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+
+class UserChangePassword(SQLModel):
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+class UserSetPassword(SQLModel):
+    new_password: str = Field(min_length=8, max_length=128)
