@@ -37,7 +37,7 @@ async def change_my_password(
 async def create_user_account(
     user_creation_params: schemas.UserCreate,
     db: SessionDep,
-    _admin: AdminDep
+    # _admin: AdminDep
     ):
     return await user.create_user(db, user_creation_params)
 

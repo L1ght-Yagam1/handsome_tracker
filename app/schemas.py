@@ -7,6 +7,18 @@ class Token(SQLModel):
     access_token: str
     token_type: str
 
+
+class TokenWithRefresh(Token):
+    refresh_token: str
+
+
+class RefreshTokenRequest(SQLModel):
+    refresh_token: str
+
+
+class LogoutRequest(SQLModel):
+    refresh_token: str
+
 # Common fields for Note
 class NoteBase(SQLModel):
     title : str = Field(max_length=255)
