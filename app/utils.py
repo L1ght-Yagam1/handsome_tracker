@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
+from fastapi import HTTPException
 
 password_hash = PasswordHash(
     (
@@ -27,3 +28,13 @@ def verify_password(password: str, hashed_password: str) -> bool:
     :return: Whether the password is valid
     """
     return password_hash.verify(password, hashed_password)
+
+
+def raise_not_found(entity: str = "Resource") -> None:
+    raise HTTPException(status_code=404, detail=f"{entity} not found")
+
+
+def get_or_404(value, entity: str = "Resource"):
+    if value is None:
+        raise_not_found(entity)
+    return value

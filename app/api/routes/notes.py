@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from app import schemas
 from app.crud import note
 from app.api.deps import CurrentUserDep, SessionDep
+from app.utils import get_or_404
 
 router = APIRouter(
     prefix="/notes",
@@ -34,9 +35,7 @@ async def read_note(
     current_user: CurrentUserDep,
 ):
     db_note = await note.get_note(db, note_id=note_id, user_id=current_user.id)
-    if not db_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return db_note
+    return get_or_404(db_note, "Note")
 
 @router.patch("/{note_id}", response_model=schemas.NotePublic)
 async def patch_note(
@@ -46,9 +45,7 @@ async def patch_note(
     current_user: CurrentUserDep,
 ):
     db_note = await note.update_note(db, note_id, note_in, user_id=current_user.id)
-    if not db_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return db_note
+    return get_or_404(db_note, "Note")
 
 @router.put("/{note_id}", response_model=schemas.NotePublic)
 async def replace_note(
@@ -58,9 +55,7 @@ async def replace_note(
     current_user: CurrentUserDep,
 ):
     db_note = await note.update_note(db, note_id, note_in, user_id=current_user.id)
-    if not db_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return db_note
+    return get_or_404(db_note, "Note")
 
 @router.delete("/{note_id}", response_model=schemas.NotePublic)
 async def delete_note(
@@ -69,6 +64,4 @@ async def delete_note(
     current_user: CurrentUserDep,
 ):
     db_note = await note.delete_note(db, note_id, user_id=current_user.id)
-    if not db_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return db_note
+    return get_or_404(db_note, "Note")

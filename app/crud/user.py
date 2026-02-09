@@ -4,7 +4,6 @@ from app.schemas import UserCreate, UsersPublic, UserUpdate, UserReplace
 from sqlmodel import select, func, col
 from app.utils import get_password_hash, verify_password
 from app import models
-from fastapi import HTTPException
 
 async def create_user(session: AsyncSession, user_in: UserCreate):
     db_user = User.model_validate(user_in, update={"hashed_password": get_password_hash(user_in.password)}) # Превращаем схему в модель таблицы
@@ -50,7 +49,7 @@ async def get_users(session: AsyncSession, skip: int = 0, limit: int = 100):
 async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
     db_user = await session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return None
     
     update_data = user_in.model_dump(exclude_unset=True)
 
@@ -69,7 +68,7 @@ async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
 async def replace_user(session: AsyncSession, user_id: int, user_in: UserReplace):
     db_user = await session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return None
 
     update_data = user_in.model_dump(exclude_unset=False)
 
@@ -95,10 +94,10 @@ async def change_password_for_user(
 ):
     db_user = await session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return None
 
     if not verify_password(current_password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Current password is incorrect")
+        raise ValueError("current_password_incorrect")
 
     db_user.hashed_password = get_password_hash(new_password)
     session.add(db_user)
@@ -113,7 +112,7 @@ async def set_password_for_user(
 ):
     db_user = await session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return None
 
     db_user.hashed_password = get_password_hash(new_password)
     session.add(db_user)
@@ -124,7 +123,7 @@ async def set_password_for_user(
 async def delete_user(session: AsyncSession, user_id: int):
     db_user = await session.get(models.User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return None
     
     await session.delete(db_user)
     await session.commit()
