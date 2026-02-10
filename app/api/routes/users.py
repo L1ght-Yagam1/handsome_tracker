@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.crud import user
+from app.crud import note, user
 from app import schemas
 from app.api.deps import SessionDep, AdminDep, CurrentUserDep
 from app.utils import get_or_404
@@ -48,6 +48,16 @@ async def read_user(
 ):
     db_user = await user.get_user_by_id(user_id, db)
     return get_or_404(db_user, "User")
+
+@router.get("/{user_id}/notes", response_model=schemas.NotesPublic)
+async def read_user_notes(
+    user_id: int,
+    db: SessionDep,
+    _admin: AdminDep,
+    skip: int = 0,
+    limit: int = 100,
+):
+    return await note.get_notes(db, user_id=user_id, skip=skip, limit=limit)
 
 @router.get("/", response_model=schemas.UsersPublic)
 async def read_users(db: SessionDep, _admin: AdminDep, skip: int = 0, limit: int = 100):
