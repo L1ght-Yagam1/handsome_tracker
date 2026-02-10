@@ -11,11 +11,10 @@ router = APIRouter(
 
 @router.patch("/me", response_model=schemas.UserPublic)
 async def patch_current_user(
-    user_in: schemas.UserUpdate,
+    user_in: schemas.UserUpdateMe,
     db: SessionDep,
-    current_user: CurrentUserDep # Используйте вашу зависимость для получения текущего юзера
+    current_user: CurrentUserDep
 ):
-    # Теперь мы берем ID прямо из объекта авторизованного пользователя
     db_user = await user.update_user(db, current_user.id, user_in)
     return get_or_404(db_user, "User")
 
@@ -37,7 +36,7 @@ async def change_my_password(
 async def create_user_account(
     user_creation_params: schemas.UserCreate,
     db: SessionDep,
-    # _admin: AdminDep
+    _admin: AdminDep
     ):
     return await user.create_user(db, user_creation_params)
 

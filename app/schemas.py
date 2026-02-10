@@ -74,6 +74,11 @@ class UserUpdate(UserBase):
     full_name: str | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
+class UserUpdateMe(SQLModel):
+    email: EmailStr | None = None
+    full_name: str | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+
 class UserReplace(SQLModel):
     email: EmailStr
     is_active: bool

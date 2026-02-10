@@ -12,15 +12,15 @@ async def create_user(session: AsyncSession, user_in: UserCreate):
     await session.refresh(db_user)
     return db_user
 
-async def get_user_by_id(id: int, db: AsyncSession):
-    # В асинхронности используем await db.exec(...)
-    statement = select(User).where(User.id == id)
-    result = await db.execute(statement)
-    return result.scalars().first()
+async def get_user_by_id(user_id: int, db: AsyncSession):
+    db_user = await db.get(models.User, user_id)
+    if not db_user:
+        return None
+    return db_user
 
-async def get_user_by_email(session: AsyncSession, email: str):
-    statement = select(User).where(User.email == email)
-    result = await session.execute(statement)
+async def get_user_by_email(db: AsyncSession, email: str):
+    statement = select(models.User).where(models.User.email == email)
+    result = await db.execute(statement)
     return result.scalars().first()
 
 async def authenticate_user(session: AsyncSession, email: str, password: str):
@@ -47,7 +47,7 @@ async def get_users(session: AsyncSession, skip: int = 0, limit: int = 100):
     return UsersPublic(users=users_list, count=count)
 
 async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
-    db_user = await session.get(models.User, user_id)
+    db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
     
@@ -66,7 +66,7 @@ async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
     return db_user
 
 async def replace_user(session: AsyncSession, user_id: int, user_in: UserReplace):
-    db_user = await session.get(models.User, user_id)
+    db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
 
@@ -92,7 +92,7 @@ async def change_password_for_user(
     current_password: str,
     new_password: str
 ):
-    db_user = await session.get(models.User, user_id)
+    db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
 
@@ -110,7 +110,7 @@ async def set_password_for_user(
     user_id: int,
     new_password: str
 ):
-    db_user = await session.get(models.User, user_id)
+    db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
 
@@ -121,7 +121,7 @@ async def set_password_for_user(
     return db_user
 
 async def delete_user(session: AsyncSession, user_id: int):
-    db_user = await session.get(models.User, user_id)
+    db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
     
