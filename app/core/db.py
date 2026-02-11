@@ -1,4 +1,5 @@
-from sqlmodel import Session, create_engine, select
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.crud.user import create_user
@@ -10,7 +11,7 @@ engine = create_async_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
 
-def init_db(session: Session) -> None:
+async def init_db(session: AsyncSession) -> None:
     # Tables should be created with Alembic migrations
     # But if you don't want to use migrations, create
     # the tables un-commenting the next lines
@@ -19,13 +20,14 @@ def init_db(session: Session) -> None:
     # This works because the models are already imported and registered from app.models
     # SQLModel.metadata.create_all(engine)
 
-    user = session.exec(
+    result = await session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
-    ).first()
+    )
+    user = result.first()
     if not user:
         user_in = UserCreate(
             email=settings.FIRST_SUPERUSER,
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
         )
-        user = create_user(session=session, user_create=user_in)
+        user = await create_user(session=session, user_in=user_in)
