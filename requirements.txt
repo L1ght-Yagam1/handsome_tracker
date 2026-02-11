@@ -6,7 +6,7 @@ google-genai
 python-dotenv
 PyJWT
 python-multipart
-pwdlib
+pwdlib[argon2]
 aiosqlite
 sqlmodel
 alembic
