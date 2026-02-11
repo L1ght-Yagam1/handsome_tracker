@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
-from app.schemas import UserCreate, UsersPublic, UserUpdate, UserReplace
+from app.schemas import UserCreate, UsersPublic, UserUpdate, UserUpdateMe, UserReplace
 from sqlmodel import select, func, col
 from app.utils import get_password_hash, verify_password
 from app import models
@@ -46,17 +46,12 @@ async def get_users(session: AsyncSession, skip: int = 0, limit: int = 100):
 
     return UsersPublic(users=users_list, count=count)
 
-async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate):
+async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate | UserUpdateMe):
     db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
     
     update_data = user_in.model_dump(exclude_unset=True)
-
-    if "password" in update_data:
-        hashed_password = get_password_hash(update_data["password"])
-        update_data["hashed_password"] = hashed_password
-        del update_data["password"]
 
     db_user.sqlmodel_update(update_data)
 
@@ -71,13 +66,6 @@ async def replace_user(session: AsyncSession, user_id: int, user_in: UserReplace
         return None
 
     update_data = user_in.model_dump(exclude_unset=False)
-
-    if update_data.get("password") is None:
-        update_data.pop("password", None)
-    else:
-        hashed_password = get_password_hash(update_data["password"])
-        update_data["hashed_password"] = hashed_password
-        del update_data["password"]
 
     db_user.sqlmodel_update(update_data)
 
