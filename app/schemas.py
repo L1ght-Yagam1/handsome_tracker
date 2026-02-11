@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
 from pydantic import EmailStr
+from pydantic import ConfigDict
 
 
 class Token(SQLModel):
@@ -33,8 +34,7 @@ class NoteCreate(NoteBase):
 class NotePublic(NoteBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class NotesPublic(SQLModel):
     notes : list[NotePublic]
@@ -59,8 +59,7 @@ class UserPublic(UserBase):
     id: int
     created_at : datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsersPublic(SQLModel):
