@@ -3,7 +3,7 @@ from typing import Annotated
 
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.db import engine
+from app.core.db import async_session
 from fastapi import Depends, HTTPException, status
 
 from fastapi.security import OAuth2PasswordBearer
@@ -16,8 +16,8 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"/login/access-token"
 )
 
-async def get_db() -> AsyncGenerator[AsyncSession, None, None]:
-    async with AsyncSession(engine) as session:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session() as session:
         yield session
 
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
