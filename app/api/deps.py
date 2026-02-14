@@ -16,6 +16,13 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"/login/access-token"
 )
 
+def raise_invalid_credentials() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
@@ -28,26 +35,14 @@ async def get_current_user(db: SessionDep, token: TokenDep) -> User:
         payload = decode_access_token(token)
         subject = payload.get("sub")
         if subject is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise_invalid_credentials()
         user_id = int(subject)
     except (jwt.PyJWTError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise_invalid_credentials()
 
     db_user = await user.get_user_by_id(user_id, db)
     if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise_invalid_credentials()
     return db_user
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
