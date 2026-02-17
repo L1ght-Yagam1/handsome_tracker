@@ -1,20 +1,36 @@
-# Handsome FastAPI App
+# Handsome
 
-Минимальный шаблон FastAPI-приложения.
+Проект разделен на две части:
 
-## Быстрый старт
+- `backend` — FastAPI + Alembic + тесты
+- `frontend` — React + Vite
+
+## Backend
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+cd backend
+python3 -m venv ../.venv
+source ../.venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Откройте `http://127.0.0.1:8000`.
+Backend по умолчанию: `http://127.0.0.1:8000`
 
-## Тесты
+## Frontend
 
 ```bash
-pytest
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend по умолчанию: `http://localhost:5173`
+
+## Тесты backend
+
+```bash
+cd backend
+../.venv/bin/pytest -q tests
 ```
