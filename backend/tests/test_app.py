@@ -70,6 +70,12 @@ def teardown_module():
 client = TestClient(app)
 
 
+def test_healthcheck():
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
+
+
 def test_login_refresh_logout_flow():
     create_user_in_db("user1@example.com", "password123")
     resp = login(client, "user1@example.com", "password123")
