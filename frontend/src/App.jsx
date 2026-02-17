@@ -22,9 +22,11 @@ import {
   createUser,
   deleteNote,
   deleteUser,
+  favoriteNote,
   fetchNotes,
   fetchUsers,
-  login
+  login,
+  unfavoriteNote
 } from "./services/handsomeApi";
 
 const mainPages = [
@@ -75,6 +77,7 @@ export default function App() {
     try {
       const loadedNotes = await fetchNotes(auth.accessToken);
       setNotes(loadedNotes);
+      setFavoriteIds(loadedNotes.filter((note) => note.isFavorite).map((note) => note.id));
     } catch (err) {
       setNotesError(err.message || "Failed to load notes");
     }
@@ -175,7 +178,8 @@ export default function App() {
       setNotes((prev) => [
         {
           ...createdNote,
-          createdAt: createdNote.createdAt || new Date().toISOString()
+          createdAt: createdNote.createdAt || new Date().toISOString(),
+          isFavorite: createdNote.isFavorite || false
         },
         ...prev
       ]);
@@ -241,10 +245,36 @@ export default function App() {
     [profileName]
   );
 
-  const toggleFavorite = (id) => {
-    setFavoriteIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const toggleFavorite = async (id) => {
+    if (!auth.accessToken) return;
+
+    setWorking(true);
+    setNotesError("");
+    const isCurrentlyFavorite = favoriteIds.includes(id);
+
+    try {
+      const updatedNote = isCurrentlyFavorite
+        ? await unfavoriteNote(auth.accessToken, id)
+        : await favoriteNote(auth.accessToken, id);
+
+      setFavoriteIds((prev) =>
+        isCurrentlyFavorite ? prev.filter((item) => item !== id) : [...prev, id]
+      );
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id
+            ? {
+                ...note,
+                isFavorite: updatedNote.isFavorite
+              }
+            : note
+        )
+      );
+    } catch (err) {
+      setNotesError(err.message || "Failed to update favorite");
+    } finally {
+      setWorking(false);
+    }
   };
 
   useEffect(() => {

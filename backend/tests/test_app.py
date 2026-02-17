@@ -122,6 +122,35 @@ def test_notes_scoped_to_current_user():
     assert data["count"] == 1
     assert len(data["notes"]) == 1
     assert data["notes"][0]["title"] == "u1 note"
+    assert data["notes"][0]["is_favorite"] is False
+
+
+def test_notes_favorite_flow():
+    create_user_in_db("fav@example.com", "password123")
+    token = login(client, "fav@example.com", "password123").json()["access_token"]
+
+    note_resp = client.post(
+        "/notes/",
+        json={"title": "fav note", "content": "fav content"},
+        headers=auth_headers(token),
+    )
+    assert note_resp.status_code == 200
+    note_id = note_resp.json()["id"]
+
+    resp = client.post(f"/notes/{note_id}/favorite", headers=auth_headers(token))
+    assert resp.status_code == 200
+    assert resp.json()["is_favorite"] is True
+
+    resp = client.get("/notes/", headers=auth_headers(token))
+    assert resp.status_code == 200
+    notes = resp.json()["notes"]
+    assert len(notes) == 1
+    assert notes[0]["is_favorite"] is True
+
+    resp = client.delete(f"/notes/{note_id}/favorite", headers=auth_headers(token))
+    assert resp.status_code == 200
+    assert resp.json()["is_favorite"] is False
+
 
 
 def test_admin_can_access_user_notes_and_users_route():

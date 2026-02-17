@@ -53,7 +53,8 @@ function normalizeNote(note) {
     id: Number(note.id),
     title: note.title || "",
     content: note.content || "",
-    createdAt: note.created_at || null
+    createdAt: note.created_at || null,
+    isFavorite: Boolean(note.is_favorite)
   };
 }
 
@@ -110,4 +111,20 @@ export async function createNote(token, { title, content }) {
 
 export async function deleteNote(token, noteId) {
   await request(`/notes/${noteId}`, { method: "DELETE", token });
+}
+
+export async function favoriteNote(token, noteId) {
+  const payload = await request(`/notes/${noteId}/favorite`, {
+    method: "POST",
+    token
+  });
+  return normalizeNote(payload);
+}
+
+export async function unfavoriteNote(token, noteId) {
+  const payload = await request(`/notes/${noteId}/favorite`, {
+    method: "DELETE",
+    token
+  });
+  return normalizeNote(payload);
 }
