@@ -68,9 +68,10 @@ jobs:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.sources=backend/app
-            -Dsonar.tests=backend/tests
-            -Dsonar.python.coverage.reportPaths=backend/coverage.xml
+            -Dsonar.projectBaseDir=backend
+            -Dsonar.sources=app
+            -Dsonar.tests=tests
+            -Dsonar.python.coverage.reportPaths=coverage.xml
         env:
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
 
