@@ -1,5 +1,5 @@
 # Handsome
-[![CI](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml)
+[![CI](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=L1ght-Yagam1_handsome_tracker&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=L1ght-Yagam1_handsome_tracker)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=L1ght-Yagam1_handsome_tracker&metric=coverage)](https://sonarcloud.io/summary/new_code?id=L1ght-Yagam1_handsome_tracker)
 
