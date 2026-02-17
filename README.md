@@ -1,6 +1,7 @@
 # Handsome
 [![CI](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/L1ght-Yagam1/handsome_tracker/graph/badge.svg?branch=main)](https://codecov.io/gh/L1ght-Yagam1/handsome_tracker)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=L1ght-Yagam1_handsome_tracker&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=L1ght-Yagam1_handsome_tracker)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=L1ght-Yagam1_handsome_tracker&metric=coverage)](https://sonarcloud.io/summary/new_code?id=L1ght-Yagam1_handsome_tracker)
 
 Проект разделен на две части:
 

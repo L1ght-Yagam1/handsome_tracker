@@ -22,8 +22,11 @@ jobs:
       FIRST_SUPERUSER: "admin@example.com"
       FIRST_SUPERUSER_PASSWORD: "password123"
       ENVIRONMENT: "local"
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -58,9 +61,21 @@ jobs:
           name: coverage-xml-${{ matrix.python-version }}
           path: backend/coverage.xml
 
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.12'
-        uses: codecov/codecov-action@v4
+      - name: SonarCloud Scan
+        if: matrix.python-version == '3.12' && env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
+        uses: SonarSource/sonarqube-scan-action@v5
         with:
-          files: backend/coverage.xml
-          fail_ci_if_error: true
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.sources=backend/app
+            -Dsonar.tests=backend/tests
+            -Dsonar.python.coverage.reportPaths=backend/coverage.xml
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+
+      - name: SonarCloud Quality Gate
+        if: matrix.python-version == '3.12' && env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
