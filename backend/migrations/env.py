@@ -14,8 +14,8 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
-# Import all models here for Alembic
-from app.models import Note
+# Import all models here for Alembic metadata registration
+import app.models  # noqa: F401
 
 
 # this is the Alembic Config object, which provides
