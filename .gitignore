@@ -9,3 +9,6 @@ somethingthatineed
 .direnv/
 thinking.md
 test.db
+.coverage
+coverage.xml
+.tracecov/

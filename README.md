@@ -1,4 +1,6 @@
 # Handsome
+[![CI](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/L1ght-Yagam1/handsome_tracker/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/L1ght-Yagam1/handsome_tracker/graph/badge.svg?branch=main)](https://codecov.io/gh/L1ght-Yagam1/handsome_tracker)
 
 Проект разделен на две части:
 
