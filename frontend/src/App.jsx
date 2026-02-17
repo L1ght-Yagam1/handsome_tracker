@@ -26,6 +26,8 @@ import {
   fetchNotes,
   fetchUsers,
   login,
+  logout as logoutApi,
+  refreshAccessToken,
   unfavoriteNote
 } from "./services/handsomeApi";
 
@@ -33,19 +35,33 @@ const mainPages = [
   { id: "dashboard", label: "Home", icon: HomeIcon },
   { id: "notes", label: "All Notes", icon: NotesIcon }
 ];
+const AUTH_STORAGE_KEY = "handsome_auth";
+const EMPTY_AUTH = { accessToken: "", refreshToken: "", email: "" };
 
 function deriveNameFromEmail(email) {
   const local = email.split("@")[0] || "User";
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
+function loadStoredAuth() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return EMPTY_AUTH;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.accessToken || !parsed?.refreshToken || !parsed?.email) return EMPTY_AUTH;
+    return {
+      accessToken: String(parsed.accessToken),
+      refreshToken: String(parsed.refreshToken),
+      email: String(parsed.email)
+    };
+  } catch {
+    return EMPTY_AUTH;
+  }
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
-  const [auth, setAuth] = useState({
-    accessToken: "",
-    refreshToken: "",
-    email: ""
-  });
+  const [auth, setAuth] = useState(loadStoredAuth);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -68,22 +84,77 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [favoritesPage, setFavoritesPage] = useState(0);
 
+  const clearSession = useCallback(() => {
+    setAuth(EMPTY_AUTH);
+    setUsers([]);
+    setNotes([]);
+    setFavoriteIds([]);
+    setIsAdmin(false);
+    setAdminOpen(false);
+    setIsProfileOpen(false);
+    setAuthError("");
+    setUsersError("");
+    setNotesError("");
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (!auth.accessToken || !auth.refreshToken || !auth.email) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  }, [auth]);
+
   const loadData = useCallback(async () => {
     if (!auth.accessToken) return;
 
     setLoading(true);
     setNotesError("");
     setUsersError("");
+    let token = auth.accessToken;
+
+    const refreshSessionIfNeeded = async () => {
+      if (!auth.refreshToken) {
+        clearSession();
+        return false;
+      }
+      try {
+        const refreshed = await refreshAccessToken(auth.refreshToken);
+        token = refreshed.access_token;
+        setAuth({
+          accessToken: refreshed.access_token,
+          refreshToken: refreshed.refresh_token,
+          email: auth.email
+        });
+        return true;
+      } catch {
+        clearSession();
+        return false;
+      }
+    };
+
     try {
-      const loadedNotes = await fetchNotes(auth.accessToken);
+      const loadedNotes = await fetchNotes(token);
       setNotes(loadedNotes);
       setFavoriteIds(loadedNotes.filter((note) => note.isFavorite).map((note) => note.id));
     } catch (err) {
-      setNotesError(err.message || "Failed to load notes");
+      if (err.status === 401) {
+        const refreshed = await refreshSessionIfNeeded();
+        if (!refreshed) {
+          setLoading(false);
+          return;
+        }
+        const loadedNotes = await fetchNotes(token);
+        setNotes(loadedNotes);
+        setFavoriteIds(loadedNotes.filter((note) => note.isFavorite).map((note) => note.id));
+      } else {
+        setNotesError(err.message || "Failed to load notes");
+      }
     }
 
     try {
-      const loadedUsers = await fetchUsers(auth.accessToken);
+      const loadedUsers = await fetchUsers(token);
       setUsers(loadedUsers);
       setIsAdmin(true);
       const me = loadedUsers.find((user) => user.email === auth.email);
@@ -91,6 +162,11 @@ export default function App() {
         setSettings((prev) => ({ ...prev, username: me.fullName }));
       }
     } catch (err) {
+      if (err.status === 401) {
+        clearSession();
+        setLoading(false);
+        return;
+      }
       setIsAdmin(false);
       setAdminOpen(false);
       if (activePage === "admin-users") {
@@ -104,7 +180,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [activePage, auth.accessToken, auth.email]);
+  }, [activePage, auth.accessToken, auth.email, auth.refreshToken, clearSession]);
 
   useEffect(() => {
     loadData();
@@ -129,16 +205,15 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    setAuth({ accessToken: "", refreshToken: "", email: "" });
-    setUsers([]);
-    setNotes([]);
-    setIsAdmin(false);
-    setAdminOpen(false);
-    setIsProfileOpen(false);
-    setAuthError("");
-    setUsersError("");
-    setNotesError("");
+  const handleLogout = async () => {
+    try {
+      if (auth.refreshToken) {
+        await logoutApi(auth.refreshToken);
+      }
+    } catch {
+      // Ignore revoke errors, we still clear local session on client.
+    }
+    clearSession();
   };
 
   const handleAddUser = async (userPayload) => {

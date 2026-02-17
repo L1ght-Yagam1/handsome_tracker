@@ -70,6 +70,22 @@ export async function login({ email, password }) {
   });
 }
 
+export async function refreshAccessToken(refreshToken) {
+  return request("/login/refresh-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+}
+
+export async function logout(refreshToken) {
+  return request("/login/logout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+}
+
 export async function fetchUsers(token) {
   const payload = await request("/users/", { token });
   return (payload?.users || []).map(normalizeUser);
