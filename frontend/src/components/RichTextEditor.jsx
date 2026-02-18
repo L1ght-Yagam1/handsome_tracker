@@ -72,6 +72,24 @@ export function RichTextEditor({ value, onChange, isBusy }) {
     <div className="rte-wrap">
       <div className="rte-toolbar">
         <ToolbarButton
+          label="Undo"
+          onClick={() => editor.chain().focus().undo().run()}
+          isActive={false}
+          disabled={isBusy || !editor.can().chain().focus().undo().run()}
+        />
+        <ToolbarButton
+          label="Redo"
+          onClick={() => editor.chain().focus().redo().run()}
+          isActive={false}
+          disabled={isBusy || !editor.can().chain().focus().redo().run()}
+        />
+        <ToolbarButton
+          label="Clear"
+          onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+          isActive={false}
+          disabled={isBusy}
+        />
+        <ToolbarButton
           label="B"
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={isMarkActive(editor, "bold")}

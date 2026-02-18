@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UsersPanel } from "./features/users/UsersPanel";
 import { NotesPanel } from "./features/notes/NotesPanel";
 import { CreateNoteModal } from "./components/CreateNoteModal";
 import { EditNoteModal } from "./components/EditNoteModal";
+import { ToastNotice } from "./components/ToastNotice";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -39,6 +40,7 @@ const mainPages = [
   { id: "notes", label: "All Notes", icon: NotesIcon }
 ];
 const AUTH_STORAGE_KEY = "handsome_auth";
+const NOTE_INTERACTIONS_STORAGE_PREFIX = "handsome_note_interactions";
 const EMPTY_AUTH = { accessToken: "", refreshToken: "", email: "" };
 
 function deriveNameFromEmail(email) {
@@ -60,6 +62,21 @@ function loadStoredAuth() {
   } catch {
     return EMPTY_AUTH;
   }
+}
+
+function loadStoredNoteInteractions(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredNoteInteractions(storageKey, interactions) {
+  localStorage.setItem(storageKey, JSON.stringify(interactions));
 }
 
 export default function App() {
@@ -87,6 +104,60 @@ export default function App() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [favoritesPage, setFavoritesPage] = useState(0);
+  const [favoritePendingId, setFavoritePendingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const interactionStorageKey = useMemo(
+    () => `${NOTE_INTERACTIONS_STORAGE_PREFIX}:${auth.email || "guest"}`,
+    [auth.email]
+  );
+  const noteInteractionsRef = useRef({});
+
+  const mergeNotesWithInteraction = (prevNotes, incomingNotes) => {
+    const prevById = new Map(prevNotes.map((note) => [note.id, note]));
+    const storedInteractions = noteInteractionsRef.current;
+    return incomingNotes.map((note) => ({
+      ...note,
+      interactedAt:
+        storedInteractions[String(note.id)] ||
+        prevById.get(note.id)?.interactedAt ||
+        note.createdAt ||
+        null
+    }));
+  };
+
+  const setNoteInteraction = useCallback(
+    (noteId, interactedAt = new Date().toISOString()) => {
+      const next = { ...noteInteractionsRef.current, [String(noteId)]: interactedAt };
+      noteInteractionsRef.current = next;
+      saveStoredNoteInteractions(interactionStorageKey, next);
+      return interactedAt;
+    },
+    [interactionStorageKey]
+  );
+
+  const removeNoteInteraction = useCallback(
+    (noteId) => {
+      const next = { ...noteInteractionsRef.current };
+      delete next[String(noteId)];
+      noteInteractionsRef.current = next;
+      saveStoredNoteInteractions(interactionStorageKey, next);
+    },
+    [interactionStorageKey]
+  );
+
+  useEffect(() => {
+    noteInteractionsRef.current = loadStoredNoteInteractions(interactionStorageKey);
+  }, [interactionStorageKey]);
+
+  const showToast = useCallback((message, tone = "warning") => {
+    setToast({ id: Date.now(), message, tone });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2800);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const clearSession = useCallback(() => {
     setAuth(EMPTY_AUTH);
@@ -140,7 +211,7 @@ export default function App() {
 
     try {
       const loadedNotes = await fetchNotes(token);
-      setNotes(loadedNotes);
+      setNotes((prev) => mergeNotesWithInteraction(prev, loadedNotes));
       setFavoriteIds(loadedNotes.filter((note) => note.isFavorite).map((note) => note.id));
     } catch (err) {
       if (err.status === 401) {
@@ -150,7 +221,7 @@ export default function App() {
           return;
         }
         const loadedNotes = await fetchNotes(token);
-        setNotes(loadedNotes);
+        setNotes((prev) => mergeNotesWithInteraction(prev, loadedNotes));
         setFavoriteIds(loadedNotes.filter((note) => note.isFavorite).map((note) => note.id));
       } else {
         setNotesError(err.message || "Failed to load notes");
@@ -254,14 +325,17 @@ export default function App() {
     setNotesError("");
     try {
       const createdNote = await createNote(auth.accessToken, payload);
+      const interactedAt = setNoteInteraction(createdNote.id);
       setNotes((prev) => [
         {
           ...createdNote,
           createdAt: createdNote.createdAt || new Date().toISOString(),
-          isFavorite: createdNote.isFavorite || false
+          isFavorite: createdNote.isFavorite || false,
+          interactedAt
         },
         ...prev
       ]);
+      showToast("Note created successfully.", "success");
     } catch (err) {
       setNotesError(err.message || "Failed to create note");
     } finally {
@@ -277,6 +351,8 @@ export default function App() {
       await deleteNote(auth.accessToken, id);
       setNotes((prev) => prev.filter((note) => note.id !== id));
       setFavoriteIds((prev) => prev.filter((item) => item !== id));
+      removeNoteInteraction(id);
+      showToast("Note deleted.", "error");
     } catch (err) {
       setNotesError(err.message || "Failed to delete note");
     } finally {
@@ -285,6 +361,10 @@ export default function App() {
   };
 
   const handleOpenEditNote = (note) => {
+    const interactionTime = setNoteInteraction(note.id);
+    setNotes((prev) =>
+      prev.map((item) => (item.id === note.id ? { ...item, interactedAt: interactionTime } : item))
+    );
     setEditingNote({ ...note });
   };
 
@@ -298,7 +378,14 @@ export default function App() {
     setNotesError("");
     try {
       const updatedNote = await updateNote(auth.accessToken, id, payload);
-      setNotes((prev) => prev.map((note) => (note.id === id ? { ...note, ...updatedNote } : note)));
+      const interactionTime = setNoteInteraction(id);
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id
+            ? { ...note, ...updatedNote, interactedAt: interactionTime }
+            : note
+        )
+      );
       setEditingNote(null);
     } catch (err) {
       setNotesError(err.message || "Failed to update note");
@@ -317,8 +404,16 @@ export default function App() {
   const favoriteCount = notes.filter((note) => favoriteIds.includes(note.id)).length;
   const recentNotes = [...notes]
     .sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const aTime = a.interactedAt
+        ? new Date(a.interactedAt).getTime()
+        : a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : 0;
+      const bTime = b.interactedAt
+        ? new Date(b.interactedAt).getTime()
+        : b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : 0;
       return bTime - aTime;
     })
     .slice(0, 3);
@@ -349,8 +444,9 @@ export default function App() {
 
   const toggleFavorite = async (id) => {
     if (!auth.accessToken) return;
+    if (favoritePendingId === id) return;
 
-    setWorking(true);
+    setFavoritePendingId(id);
     setNotesError("");
     const isCurrentlyFavorite = favoriteIds.includes(id);
 
@@ -358,6 +454,7 @@ export default function App() {
       const updatedNote = isCurrentlyFavorite
         ? await unfavoriteNote(auth.accessToken, id)
         : await favoriteNote(auth.accessToken, id);
+      const interactionTime = setNoteInteraction(id);
 
       setFavoriteIds((prev) =>
         isCurrentlyFavorite ? prev.filter((item) => item !== id) : [...prev, id]
@@ -367,7 +464,8 @@ export default function App() {
           note.id === id
             ? {
                 ...note,
-                isFavorite: updatedNote.isFavorite
+                isFavorite: updatedNote.isFavorite,
+                interactedAt: interactionTime
               }
             : note
         )
@@ -375,7 +473,7 @@ export default function App() {
     } catch (err) {
       setNotesError(err.message || "Failed to update favorite");
     } finally {
-      setWorking(false);
+      setFavoritePendingId(null);
     }
   };
 
@@ -521,12 +619,24 @@ export default function App() {
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <PlusIcon className="btn-icon" />
-                  Create New Note
+                  Note
                 </button>
               </div>
               <div className="note-grid">
                 {recentNotes.map((note) => (
-                  <article key={note.id} className="note-card">
+                  <article
+                    key={note.id}
+                    className="note-card note-card-item editable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenEditNote(note)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleOpenEditNote(note);
+                      }
+                    }}
+                  >
                     <div className="note-head">
                       <h4>{note.title}</h4>
                       <button
@@ -536,7 +646,11 @@ export default function App() {
                             ? "icon-btn favorite-btn active"
                             : "icon-btn favorite-btn"
                         }
-                        onClick={() => toggleFavorite(note.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleFavorite(note.id);
+                        }}
+                        disabled={loading || favoritePendingId === note.id}
                       >
                         <StarIcon filled={favoriteIds.includes(note.id)} />
                       </button>
@@ -586,7 +700,19 @@ export default function App() {
               </div>
               <div className="note-grid favorites-grid">
                 {pagedFavoriteNotes.map((note) => (
-                  <article key={note.id} className="note-card">
+                  <article
+                    key={note.id}
+                    className="note-card note-card-item editable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenEditNote(note)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleOpenEditNote(note);
+                      }
+                    }}
+                  >
                     <div className="note-head">
                       <h4>{note.title}</h4>
                       <button
@@ -596,7 +722,11 @@ export default function App() {
                             ? "btn icon-btn favorite-btn active"
                             : "btn icon-btn favorite-btn"
                         }
-                        onClick={() => toggleFavorite(note.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleFavorite(note.id);
+                        }}
+                        disabled={loading || favoritePendingId === note.id}
                       >
                         <StarIcon filled={favoriteIds.includes(note.id)} />
                       </button>
@@ -653,6 +783,7 @@ export default function App() {
                 onDeleteNote={handleDeleteNote}
                 onToggleFavorite={toggleFavorite}
                 favoriteIds={favoriteIds}
+                favoritePendingId={favoritePendingId}
                 error={notesError}
                 isBusy={working || loading}
               />
@@ -723,6 +854,7 @@ export default function App() {
         open={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleAddNote}
+        onNotify={showToast}
         isBusy={working || loading}
       />
 
@@ -732,8 +864,15 @@ export default function App() {
         note={editingNote}
         onClose={handleCloseEditNote}
         onSave={handleUpdateNote}
+        onNotify={showToast}
         isBusy={working || loading}
       />
+
+      {toast && (
+        <div className="toast-layer">
+          <ToastNotice message={toast.message} tone={toast.tone} />
+        </div>
+      )}
 
       {isProfileOpen && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">

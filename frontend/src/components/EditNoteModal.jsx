@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { RichTextEditor } from "./RichTextEditor";
 import { normalizeEditorContentForSave } from "../utils/noteContent";
 
-export function EditNoteModal({ open, note, onClose, onSave, isBusy }) {
+export function EditNoteModal({ open, note, onClose, onSave, onNotify, isBusy }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -16,7 +16,10 @@ export function EditNoteModal({ open, note, onClose, onSave, isBusy }) {
 
   const handleSave = async () => {
     const cleanTitle = title.trim();
-    if (!cleanTitle) return;
+    if (!cleanTitle) {
+      onNotify?.("Title is required to save changes.", "warning");
+      return;
+    }
     await onSave(note.id, {
       title: cleanTitle,
       content: normalizeEditorContentForSave(content)
@@ -40,10 +43,10 @@ export function EditNoteModal({ open, note, onClose, onSave, isBusy }) {
               disabled={isBusy}
             />
           </label>
-          <label className="modal-field">
-            Content
+          <div className="modal-field">
+            <span>Content</span>
             <RichTextEditor value={content} onChange={setContent} isBusy={isBusy} />
-          </label>
+          </div>
         </div>
         <div className="modal-actions">
           <button type="button" onClick={handleSave} className="btn btn-primary" disabled={isBusy}>

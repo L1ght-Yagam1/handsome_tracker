@@ -3,7 +3,7 @@ import { PlusIcon, XIcon } from "./Icons";
 import { RichTextEditor } from "./RichTextEditor";
 import { normalizeEditorContentForSave } from "../utils/noteContent";
 
-export function CreateNoteModal({ open, onClose, onSave, isBusy }) {
+export function CreateNoteModal({ open, onClose, onSave, onNotify, isBusy }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -17,7 +17,10 @@ export function CreateNoteModal({ open, onClose, onSave, isBusy }) {
 
   const handleSave = async () => {
     const cleanTitle = title.trim();
-    if (!cleanTitle) return;
+    if (!cleanTitle) {
+      onNotify?.("Title is required to create a note.", "warning");
+      return;
+    }
     await onSave({ title: cleanTitle, content: normalizeEditorContentForSave(content) });
     setTitle("");
     setContent("");
@@ -49,14 +52,14 @@ export function CreateNoteModal({ open, onClose, onSave, isBusy }) {
               disabled={isBusy}
             />
           </label>
-          <label className="modal-field">
-            Content
+          <div className="modal-field">
+            <span>Content</span>
             <RichTextEditor
               value={content}
               onChange={setContent}
               isBusy={isBusy}
             />
-          </label>
+          </div>
         </div>
         <div className="modal-actions">
           <button type="button" onClick={handleSave} className="btn btn-primary" disabled={isBusy}>

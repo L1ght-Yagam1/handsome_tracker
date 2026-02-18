@@ -7,6 +7,7 @@ export function NotesPanel({
   onDeleteNote,
   onToggleFavorite,
   favoriteIds,
+  favoritePendingId,
   isBusy,
   error
 }) {
@@ -41,7 +42,7 @@ export function NotesPanel({
                     event.stopPropagation();
                     onToggleFavorite(note.id);
                   }}
-                  disabled={isBusy}
+                  disabled={isBusy || favoritePendingId === note.id}
                 >
                 <StarIcon filled={favoriteIds.includes(note.id)} />
               </button>
