@@ -23,10 +23,10 @@ async def init_db(session: AsyncSession) -> None:
     # This works because the models are already imported and registered from app.models
     # SQLModel.metadata.create_all(engine)
 
-    result = await session.exec(
+    result = await session.execute(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     )
-    user = result.first()
+    user = result.scalars().first()
     if not user:
         user_in = UserCreate(
             email=settings.FIRST_SUPERUSER,

@@ -573,6 +573,15 @@ select:focus {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+.note-card-item.editable {
+  cursor: pointer;
+}
+
+.note-card-item.editable:focus-visible {
+  outline: 2px solid #00ff88;
+  outline-offset: 2px;
+}
+
 .note-card-item:hover {
   border-color: rgba(0, 255, 136, 0.45);
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.16);
@@ -601,6 +610,11 @@ select:focus {
 .note-card-preview {
   margin: 10px 0 14px;
   color: #9ca3af;
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .note-card-meta {
@@ -720,6 +734,10 @@ select:focus {
   padding: 18px;
 }
 
+.note-editor-modal {
+  width: min(860px, 100%);
+}
+
 .profile-modal {
   width: min(380px, 100%);
   border: 1px solid #1f2923;
@@ -817,6 +835,41 @@ select:focus {
   outline: 0;
   border-color: #00ff88;
   box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.16);
+}
+
+.rte-wrap {
+  border: 1px solid #26332c;
+  border-radius: 11px;
+  background: #151c18;
+}
+
+.rte-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid #26332c;
+}
+
+.rte-btn {
+  width: 44px;
+  padding: 8px 0;
+}
+
+.rte-btn.active {
+  border-color: #00ff88;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.12);
+}
+
+.rte-content {
+  min-height: 180px;
+  padding: 12px;
+  color: #e5e7eb;
+  outline: 0;
+}
+
+.rte-content p {
+  margin: 0;
 }
 
 .modal-actions {

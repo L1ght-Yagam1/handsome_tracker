@@ -1,42 +1,33 @@
 import { useEffect, useState } from "react";
-import { PlusIcon, XIcon } from "./Icons";
 import { RichTextEditor } from "./RichTextEditor";
 import { normalizeEditorContentForSave } from "../utils/noteContent";
 
-export function CreateNoteModal({ open, onClose, onSave, isBusy }) {
+export function EditNoteModal({ open, note, onClose, onSave, isBusy }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
   useEffect(() => {
-    if (!open) return;
-    setTitle("");
-    setContent("");
-  }, [open]);
+    if (!open || !note) return;
+    setTitle(note.title || "");
+    setContent(note.content || "");
+  }, [open, note]);
 
-  if (!open) return null;
+  if (!open || !note) return null;
 
   const handleSave = async () => {
     const cleanTitle = title.trim();
     if (!cleanTitle) return;
-    await onSave({ title: cleanTitle, content: normalizeEditorContentForSave(content) });
-    setTitle("");
-    setContent("");
-    onClose();
+    await onSave(note.id, {
+      title: cleanTitle,
+      content: normalizeEditorContentForSave(content)
+    });
   };
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-card">
+      <div className="modal-card note-editor-modal">
         <div className="modal-header">
-          <h3>Create New Note</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn icon-btn btn-ghost"
-            disabled={isBusy}
-          >
-            <XIcon />
-          </button>
+          <h3>Edit Note</h3>
         </div>
         <div className="modal-body">
           <label className="modal-field">
@@ -51,24 +42,14 @@ export function CreateNoteModal({ open, onClose, onSave, isBusy }) {
           </label>
           <label className="modal-field">
             Content
-            <RichTextEditor
-              value={content}
-              onChange={setContent}
-              isBusy={isBusy}
-            />
+            <RichTextEditor value={content} onChange={setContent} isBusy={isBusy} />
           </label>
         </div>
         <div className="modal-actions">
           <button type="button" onClick={handleSave} className="btn btn-primary" disabled={isBusy}>
-            <PlusIcon className="btn-icon" />
-            Create Note
+            Save Changes
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-cancel"
-            onClick={onClose}
-            disabled={isBusy}
-          >
+          <button type="button" className="btn btn-ghost btn-cancel" onClick={onClose} disabled={isBusy}>
             Cancel
           </button>
         </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { UsersPanel } from "./features/users/UsersPanel";
 import { NotesPanel } from "./features/notes/NotesPanel";
 import { CreateNoteModal } from "./components/CreateNoteModal";
+import { EditNoteModal } from "./components/EditNoteModal";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -28,8 +29,10 @@ import {
   login,
   logout as logoutApi,
   refreshAccessToken,
+  updateNote,
   unfavoriteNote
 } from "./services/handsomeApi";
+import { stripHtml } from "./utils/noteContent";
 
 const mainPages = [
   { id: "dashboard", label: "Home", icon: HomeIcon },
@@ -78,6 +81,7 @@ export default function App() {
     emailNotifications: true
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -280,11 +284,34 @@ export default function App() {
     }
   };
 
+  const handleOpenEditNote = (note) => {
+    setEditingNote({ ...note });
+  };
+
+  const handleCloseEditNote = () => {
+    setEditingNote(null);
+  };
+
+  const handleUpdateNote = async (id, payload) => {
+    if (!auth.accessToken) return;
+    setWorking(true);
+    setNotesError("");
+    try {
+      const updatedNote = await updateNote(auth.accessToken, id, payload);
+      setNotes((prev) => prev.map((note) => (note.id === id ? { ...note, ...updatedNote } : note)));
+      setEditingNote(null);
+    } catch (err) {
+      setNotesError(err.message || "Failed to update note");
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const filteredNotes = notes.filter((note) => {
     const query = search.trim().toLowerCase();
     if (!query) return true;
     return (
-      note.title.toLowerCase().includes(query) || note.content.toLowerCase().includes(query)
+      note.title.toLowerCase().includes(query) || stripHtml(note.content).toLowerCase().includes(query)
     );
   });
   const favoriteCount = notes.filter((note) => favoriteIds.includes(note.id)).length;
@@ -514,7 +541,7 @@ export default function App() {
                         <StarIcon filled={favoriteIds.includes(note.id)} />
                       </button>
                     </div>
-                    <p>{note.content}</p>
+                    <p className="note-card-preview">{stripHtml(note.content)}</p>
                     <div className="note-card-date">
                       <CalendarIcon className="meta-icon" />
                       {note.createdAt
@@ -574,7 +601,7 @@ export default function App() {
                         <StarIcon filled={favoriteIds.includes(note.id)} />
                       </button>
                     </div>
-                    <p>{note.content}</p>
+                    <p className="note-card-preview">{stripHtml(note.content)}</p>
                     <div className="note-card-date">
                       <CalendarIcon className="meta-icon" />
                       {note.createdAt
@@ -622,6 +649,7 @@ export default function App() {
               </div>
               <NotesPanel
                 notes={filteredNotes}
+                onEditNote={handleOpenEditNote}
                 onDeleteNote={handleDeleteNote}
                 onToggleFavorite={toggleFavorite}
                 favoriteIds={favoriteIds}
@@ -695,6 +723,15 @@ export default function App() {
         open={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleAddNote}
+        isBusy={working || loading}
+      />
+
+      <EditNoteModal
+        key={editingNote?.id ?? "edit-note-empty"}
+        open={Boolean(editingNote)}
+        note={editingNote}
+        onClose={handleCloseEditNote}
+        onSave={handleUpdateNote}
         isBusy={working || loading}
       />
 

@@ -125,6 +125,16 @@ export async function createNote(token, { title, content }) {
   return normalizeNote(payload);
 }
 
+export async function updateNote(token, noteId, { title, content }) {
+  const payload = await request(`/notes/${noteId}`, {
+    method: "PATCH",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content })
+  });
+  return normalizeNote(payload);
+}
+
 export async function deleteNote(token, noteId) {
   await request(`/notes/${noteId}`, { method: "DELETE", token });
 }

@@ -1,7 +1,9 @@
 import { CalendarIcon, StarIcon } from "../../components/Icons";
+import { stripHtml } from "../../utils/noteContent";
 
 export function NotesPanel({
   notes,
+  onEditNote,
   onDeleteNote,
   onToggleFavorite,
   favoriteIds,
@@ -13,7 +15,19 @@ export function NotesPanel({
       {error && <p className="status error">{error}</p>}
       <ul className="notes-card-grid">
         {notes.map((note) => (
-          <li key={note.id} className="note-card-item">
+          <li
+            key={note.id}
+            className="note-card-item editable"
+            role="button"
+            tabIndex={0}
+            onClick={() => onEditNote(note)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onEditNote(note);
+              }
+            }}
+          >
             <div className="note-card-head">
               <h3>{note.title}</h3>
                 <button
@@ -23,13 +37,16 @@ export function NotesPanel({
                       ? "btn icon-btn favorite-btn active"
                       : "btn icon-btn favorite-btn"
                   }
-                  onClick={() => onToggleFavorite(note.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleFavorite(note.id);
+                  }}
                   disabled={isBusy}
                 >
                 <StarIcon filled={favoriteIds.includes(note.id)} />
               </button>
             </div>
-            <p className="note-card-preview">{note.content}</p>
+            <p className="note-card-preview">{stripHtml(note.content)}</p>
             <div className="note-card-meta">
               <span className="note-time">
                 <CalendarIcon className="meta-icon" />
@@ -42,7 +59,10 @@ export function NotesPanel({
                   : "Today"}
               </span>
               <button
-                onClick={() => onDeleteNote(note.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDeleteNote(note.id);
+                }}
                 type="button"
                 className="btn btn-ghost"
                 disabled={isBusy}
