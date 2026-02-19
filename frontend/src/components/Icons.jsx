@@ -107,6 +107,19 @@ export function CalendarIcon({ className = "icon" }) {
   );
 }
 
+export function FilterIcon({ className = "icon" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M4 6h16l-6.2 7.1v4.9l-3.6 2v-6.9L4 6z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function UserIcon({ className = "icon" }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">

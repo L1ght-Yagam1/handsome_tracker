@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ClockIcon,
   FileIcon,
+  FilterIcon,
   HomeIcon,
   NotesIcon,
   PlusIcon,
@@ -38,6 +39,11 @@ import { stripHtml } from "./utils/noteContent";
 const mainPages = [
   { id: "dashboard", label: "Home", icon: HomeIcon },
   { id: "notes", label: "All Notes", icon: NotesIcon }
+];
+const notesSortOptions = [
+  { id: "created", label: "Created" },
+  { id: "updated", label: "Updated" },
+  { id: "title", label: "Title" }
 ];
 const AUTH_STORAGE_KEY = "handsome_auth";
 const NOTE_INTERACTIONS_STORAGE_PREFIX = "handsome_note_interactions";
@@ -92,6 +98,7 @@ export default function App() {
   const [notesError, setNotesError] = useState("");
   const [usersError, setUsersError] = useState("");
   const [search, setSearch] = useState("");
+  const [notesSort, setNotesSort] = useState("updated");
   const [settings, setSettings] = useState({
     username: "User",
     darkMode: true,
@@ -394,13 +401,25 @@ export default function App() {
     }
   };
 
-  const filteredNotes = notes.filter((note) => {
+  const filteredNotes = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return true;
-    return (
-      note.title.toLowerCase().includes(query) || stripHtml(note.content).toLowerCase().includes(query)
-    );
-  });
+    const visibleNotes = notes.filter((note) => {
+      if (!query) return true;
+      return (
+        note.title.toLowerCase().includes(query) || stripHtml(note.content).toLowerCase().includes(query)
+      );
+    });
+
+    const getCreatedAtTime = (note) => (note.createdAt ? new Date(note.createdAt).getTime() : 0);
+    const getUpdatedAtTime = (note) =>
+      note.interactedAt ? new Date(note.interactedAt).getTime() : getCreatedAtTime(note);
+
+    return [...visibleNotes].sort((a, b) => {
+      if (notesSort === "created") return getCreatedAtTime(b) - getCreatedAtTime(a);
+      if (notesSort === "title") return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      return getUpdatedAtTime(b) - getUpdatedAtTime(a);
+    });
+  }, [notes, notesSort, search]);
   const favoriteCount = notes.filter((note) => favoriteIds.includes(note.id)).length;
   const recentNotes = [...notes]
     .sort((a, b) => {
@@ -765,7 +784,28 @@ export default function App() {
                 </div>
               </div>
               <div className="section-head notes-head">
-                <h2 className="panel-title all-notes-title">All Notes</h2>
+                <div className="all-notes-header">
+                  <h2 className="panel-title all-notes-title">All Notes</h2>
+                  <div className="notes-filter-row">
+                    <FilterIcon className="notes-filter-icon" />
+                    <div className="notes-sort-group" role="group" aria-label="Sort notes">
+                      {notesSortOptions.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={
+                            notesSort === option.id
+                              ? "btn notes-sort-btn active"
+                              : "btn notes-sort-btn"
+                          }
+                          onClick={() => setNotesSort(option.id)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <div className="notes-toolbar">
                   <button
                     type="button"
