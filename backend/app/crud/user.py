@@ -1,12 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import User
-from app.schemas import UserCreate, UsersPublic, UserUpdate, UserUpdateMe, UserReplace
-from sqlmodel import select, func, col
-from app.utils import get_password_hash, verify_password
+from sqlmodel import col, func, select
+
 from app import models
+from app.models import User
+from app.schemas import UserCreate, UserReplace, UsersPublic, UserUpdate, UserUpdateMe
+from app.utils import get_password_hash, verify_password
+
 
 async def create_user(session: AsyncSession, user_in: UserCreate):
-    db_user = User.model_validate(user_in, update={"hashed_password": get_password_hash(user_in.password)}) # Превращаем схему в модель таблицы
+    db_user = User.model_validate(
+        user_in, update={"hashed_password": get_password_hash(user_in.password)}
+    ) # Превращаем схему в модель таблицы
     session.add(db_user)
     await session.commit()
     await session.refresh(db_user)
@@ -46,7 +50,11 @@ async def get_users(session: AsyncSession, skip: int = 0, limit: int = 100):
 
     return UsersPublic(users=users_list, count=count)
 
-async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate | UserUpdateMe):
+async def update_user(
+    session: AsyncSession,
+    user_id: int,
+    user_in: UserUpdate | UserUpdateMe
+):
     db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None
@@ -60,7 +68,11 @@ async def update_user(session: AsyncSession, user_id: int, user_in: UserUpdate |
     await session.refresh(db_user)
     return db_user
 
-async def replace_user(session: AsyncSession, user_id: int, user_in: UserReplace):
+async def replace_user(
+    session: AsyncSession,
+    user_id: int,
+    user_in: UserReplace
+):
     db_user = await get_user_by_id(user_id, session)
     if not db_user:
         return None

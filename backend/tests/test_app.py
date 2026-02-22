@@ -4,12 +4,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlmodel import SQLModel
 
-from app.api.deps import get_db
 import app.models  # ensure models are registered
+from app.api.deps import get_db
 from app.crud.user import create_user
 from app.main import app
 from app.schemas import UserCreate
-
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 test_engine = create_async_engine(TEST_DATABASE_URL, future=True)
@@ -97,7 +96,10 @@ def test_login_refresh_logout_flow():
     # Logout revokes current refresh token
     resp = client.post("/login/logout", json={"refresh_token": body2["refresh_token"]})
     assert resp.status_code == 204
-    resp = client.post("/login/refresh-token", json={"refresh_token": body2["refresh_token"]})
+    resp = client.post(
+        "/login/refresh-token",
+        json={"refresh_token": body2["refresh_token"]}
+    )
     assert resp.status_code == 401
 
 
@@ -163,8 +165,10 @@ def test_admin_can_access_user_notes_and_users_route():
     create_user_in_db("admin@example.com", "password123", is_superuser=True)
     user = create_user_in_db("regular@example.com", "password123")
 
-    admin_token = login(client, "admin@example.com", "password123").json()["access_token"]
-    user_token = login(client, "regular@example.com", "password123").json()["access_token"]
+    admin_token = login(client, "admin@example.com", "password123").\
+        json()["access_token"]
+    user_token = login(client, "regular@example.com", "password123")\
+        .json()["access_token"]
 
     # create a note for the regular user
     resp = client.post(

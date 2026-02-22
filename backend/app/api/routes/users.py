@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from app.crud import note, user
+
 from app import schemas
-from app.api.deps import SessionDep, AdminDep, CurrentUserDep
+from app.api.deps import AdminDep, CurrentUserDep, SessionDep
+from app.crud import note, user
 from app.utils import get_or_404
 
 router = APIRouter(

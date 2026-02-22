@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
+
+from fastapi import HTTPException
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
-from fastapi import HTTPException
 
 password_hash = PasswordHash(
     (

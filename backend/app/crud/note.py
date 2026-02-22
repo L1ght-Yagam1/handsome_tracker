@@ -3,7 +3,7 @@ from sqlmodel import col, func, select
 
 from app import models, schemas
 from app.models import FavoriteNoteLink, Note
-from app.schemas import NoteCreate, NoteUpdate, NotesPublic
+from app.schemas import NoteCreate, NotesPublic, NoteUpdate
 
 
 def _serialize_note(note: Note, favorite_ids: set[int]) -> schemas.NotePublic:
@@ -43,7 +43,11 @@ async def get_note_public(session: AsyncSession, note_id: int, user_id: int):
     if not db_note:
         return None
 
-    favorite_ids = await get_favorite_note_ids(session, user_id=user_id, note_ids=[db_note.id])
+    favorite_ids = await get_favorite_note_ids(
+        session,
+        user_id=user_id,
+        note_ids=[db_note.id]
+    )
     return _serialize_note(db_note, favorite_ids)
 
 
@@ -56,7 +60,12 @@ async def create_note(session: AsyncSession, note_in: NoteCreate, user_id: int):
     return await get_note_public(session, note_id=db_note.id, user_id=user_id)
 
 
-async def get_notes(session: AsyncSession, user_id: int, skip: int = 0, limit: int = 100):
+async def get_notes(
+    session: AsyncSession,
+    user_id: int,
+    skip: int = 0,
+    limit: int = 100
+):
     count_statement = (
         select(func.count())
         .select_from(models.Note)
