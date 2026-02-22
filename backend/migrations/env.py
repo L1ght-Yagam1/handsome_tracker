@@ -1,15 +1,10 @@
-from dotenv import load_dotenv
-load_dotenv()
-import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, pool
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+from app.core.config import settings
 
-print("DATABASE_URL =", os.getenv("DATABASE_URL"))
 
 from logging.config import fileConfig
 
-from sqlalchemy import pool
 from sqlmodel import SQLModel
 
 from alembic import context
@@ -37,6 +32,8 @@ target_metadata = SQLModel.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+config.set_main_option("sqlalchemy.url", str(settings.SQLALCHEMY_DATABASE_URI))
 
 
 def run_migrations_offline() -> None:
@@ -71,7 +68,7 @@ def run_migrations_online() -> None:
 
     """
     connectable = create_engine(
-        DATABASE_URL,
+        config.get_main_option("sqlalchemy.url"),
     poolclass=pool.NullPool,
     )
 
