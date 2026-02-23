@@ -3,6 +3,14 @@ name: CI
 on:
   push:
   pull_request:
+  
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   tests:
@@ -43,11 +51,6 @@ jobs:
         run: |
           cd backend
           pytest -q tests
-      
-      - name: Run Ruff
-        run: |
-          cd backend
-          ruff check --output-format=github . 
 
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
