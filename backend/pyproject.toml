@@ -6,3 +6,4 @@ select = ["E", "F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/**" = ["ALL"]
+"backend/migrations/**" = ["ALL"]
