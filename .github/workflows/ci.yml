@@ -43,6 +43,11 @@ jobs:
         run: |
           cd backend
           pytest -q tests
+      
+      - name: Run Ruff
+        run: |
+          cd backend
+          ruff check --output-format=github . 
 
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
