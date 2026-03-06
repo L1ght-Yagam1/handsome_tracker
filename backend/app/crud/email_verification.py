@@ -16,6 +16,6 @@ async def save_code(session: AsyncSession, email: str, code_hash: str, created_a
 
 async def get_code(session: AsyncSession, email: str):
     code_hash = await session.execute(
-        select(EmailVerificationCode.code_hash).where(EmailVerificationCode.email == email).order_by(desc(EmailVerificationCode.created_at))
+        select(EmailVerificationCode.code_hash).where(EmailVerificationCode.email == email).order_by(desc(EmailVerificationCode.created_at)).limit(1)
     )
-    return result.scalar_one_or_none()
+    return code_hash.scalar_one_or_none()

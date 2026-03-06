@@ -71,6 +71,7 @@ class RefreshToken(SQLModel, table=True):
 
 
 class EmailVerificationCode(SQLModel, table=True):
+    __tablename__ = "email_verification_code"
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(index=True, nullable=False, max_length=255)
     code_hash: str = Field(max_length=255)
