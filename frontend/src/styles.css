@@ -729,6 +729,12 @@ select:focus {
   color: #fecaca;
 }
 
+.status.success {
+  border-color: rgba(16, 185, 129, 0.65);
+  background: rgba(16, 185, 129, 0.14);
+  color: #bbf7d0;
+}
+
 .settings-panel {
   max-width: 920px;
 }
@@ -771,9 +777,62 @@ select:focus {
   place-items: center;
 }
 
+.login-panel {
+  width: min(590px, 100%);
+  display: grid;
+  gap: 14px;
+}
+
+.login-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.auth-toggle-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #00ff88;
+  border-color: rgba(0, 255, 136, 0.45);
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.auth-toggle-btn:hover:not(:disabled) {
+  color: #09100c;
+  background: #00ff88;
+  border-color: #00ff88;
+}
+
 .login-panel h1 {
-  margin: 6px 0;
+  margin: 0;
   font-size: 2rem;
+}
+
+.login-panel .subtle {
+  margin: 0;
+}
+
+.login-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.login-form > .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.auth-code-row .btn {
+  width: auto;
+  white-space: nowrap;
 }
 
 .eyebrow {
@@ -1061,5 +1120,9 @@ select:focus {
 
   .notes-search-centered input {
     width: 100%;
+  }
+
+  .auth-code-row {
+    grid-template-columns: 1fr;
   }
 }

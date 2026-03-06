@@ -29,8 +29,10 @@ import {
   fetchNotes,
   fetchUsers,
   login,
+  registerUser,
   logout as logoutApi,
   refreshAccessToken,
+  sendRegistrationCode,
   updateNote,
   unfavoriteNote
 } from "./services/handsomeApi";
@@ -48,6 +50,7 @@ const notesSortOptions = [
 const AUTH_STORAGE_KEY = "handsome_auth";
 const NOTE_INTERACTIONS_STORAGE_PREFIX = "handsome_note_interactions";
 const EMPTY_AUTH = { accessToken: "", refreshToken: "", email: "" };
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function deriveNameFromEmail(email) {
   const local = email.split("@")[0] || "User";
@@ -88,8 +91,17 @@ function saveStoredNoteInteractions(storageKey, interactions) {
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
   const [auth, setAuth] = useState(loadStoredAuth);
+  const [authView, setAuthView] = useState("login");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [registerForm, setRegisterForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    verificationCode: ""
+  });
   const [authError, setAuthError] = useState("");
+  const [registerError, setRegisterError] = useState("");
+  const [registerInfo, setRegisterInfo] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -118,6 +130,9 @@ export default function App() {
     [auth.email]
   );
   const noteInteractionsRef = useRef({});
+  const normalizedRegisterEmail = registerForm.email.trim();
+  const isRegisterEmailValid =
+    normalizedRegisterEmail.length > 0 && EMAIL_REGEX.test(normalizedRegisterEmail);
 
   const mergeNotesWithInteraction = (prevNotes, incomingNotes) => {
     const prevById = new Map(prevNotes.map((note) => [note.id, note]));
@@ -285,6 +300,91 @@ export default function App() {
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  const handleSwitchAuthView = (nextView) => {
+    setAuthView(nextView);
+    setAuthError("");
+    setRegisterError("");
+    setRegisterInfo("");
+  };
+
+  const updateRegisterField = (field, value) => {
+    setRegisterForm((prev) => ({ ...prev, [field]: value }));
+    setRegisterError("");
+    if (field === "email") {
+      setRegisterInfo("");
+    }
+  };
+
+  const handleSendVerificationCode = () => {
+    if (!isRegisterEmailValid || authLoading) return;
+
+    setAuthLoading(true);
+    setRegisterError("");
+    setRegisterInfo("");
+    sendRegistrationCode(normalizedRegisterEmail)
+      .then(() => {
+        setRegisterInfo(`Verification code was sent to ${normalizedRegisterEmail}.`);
+      })
+      .catch((err) => {
+        setRegisterError(err.message || "Failed to send verification code.");
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
+  };
+
+  const handleRegisterPreview = () => {
+    const email = normalizedRegisterEmail;
+    const password = registerForm.password;
+    const confirmPassword = registerForm.confirmPassword;
+    const verificationCode = registerForm.verificationCode.trim();
+
+    if (!email || !password || !confirmPassword || !verificationCode) {
+      setRegisterError("Fill in all registration fields.");
+      return;
+    }
+    if (!isRegisterEmailValid) {
+      setRegisterError("Enter a valid email address.");
+      return;
+    }
+    if (password.length < 8) {
+      setRegisterError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setRegisterError("Passwords do not match.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setRegisterError("");
+    setRegisterInfo("");
+    registerUser({
+      email,
+      password,
+      confirmPassword,
+      code: verificationCode,
+      fullName: ""
+    })
+      .then(() => {
+        setRegisterForm({
+          email,
+          password: "",
+          confirmPassword: "",
+          verificationCode: ""
+        });
+        setAuthView("login");
+        setLoginForm({ email, password: "" });
+        setRegisterInfo("Account created. Sign in with your new credentials.");
+      })
+      .catch((err) => {
+        setRegisterError(err.message || "Registration failed.");
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
   };
 
   const handleLogout = async () => {
@@ -506,33 +606,109 @@ export default function App() {
     return (
       <div className="app-shell auth-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">handsome</p>
-          <h1>Welcome back</h1>
-          <p className="subtle">Sign in to manage notes and users.</p>
-          <div className="row">
-            <input
-              type="email"
-              placeholder="Email"
-              value={loginForm.email}
-              onChange={(event) =>
-                setLoginForm((prev) => ({ ...prev, email: event.target.value }))
-              }
-              disabled={authLoading}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={loginForm.password}
-              onChange={(event) =>
-                setLoginForm((prev) => ({ ...prev, password: event.target.value }))
-              }
-              disabled={authLoading}
-            />
-            <button type="button" className="btn btn-primary" onClick={handleLogin} disabled={authLoading}>
-              Sign in
+          <div className="login-panel-head">
+            <p className="eyebrow">handsome</p>
+            <button
+              type="button"
+              className="btn btn-ghost auth-toggle-btn"
+              onClick={() => handleSwitchAuthView(authView === "login" ? "register" : "login")}
+            >
+              {authView === "login" ? "Register" : "Sign in"}
             </button>
           </div>
-          {authError && <p className="status error">{authError}</p>}
+
+          {authView === "login" ? (
+            <>
+              <h1>Welcome back</h1>
+              <p className="subtle">Sign in to manage notes and users.</p>
+              <div className="login-form">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={loginForm.email}
+                  onChange={(event) =>
+                    setLoginForm((prev) => ({ ...prev, email: event.target.value }))
+                  }
+                  disabled={authLoading}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={loginForm.password}
+                  onChange={(event) =>
+                    setLoginForm((prev) => ({ ...prev, password: event.target.value }))
+                  }
+                  disabled={authLoading}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleLogin}
+                  disabled={authLoading}
+                >
+                  Sign in
+                </button>
+              </div>
+              {authError && <p className="status error">{authError}</p>}
+            </>
+          ) : (
+            <>
+              <h1>Create account</h1>
+              <p className="subtle">Register to manage notes and users.</p>
+              <div className="login-form">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={registerForm.email}
+                  onChange={(event) => updateRegisterField("email", event.target.value)}
+                  disabled={authLoading}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={registerForm.password}
+                  onChange={(event) => updateRegisterField("password", event.target.value)}
+                  disabled={authLoading}
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm password"
+                  value={registerForm.confirmPassword}
+                  onChange={(event) => updateRegisterField("confirmPassword", event.target.value)}
+                  disabled={authLoading}
+                />
+                <div className="auth-code-row">
+                  <input
+                    type="text"
+                    placeholder="Code from email"
+                    value={registerForm.verificationCode}
+                    onChange={(event) =>
+                      updateRegisterField("verificationCode", event.target.value)
+                    }
+                    disabled={authLoading}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={handleSendVerificationCode}
+                    disabled={!isRegisterEmailValid || authLoading}
+                  >
+                    Send code
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleRegisterPreview}
+                  disabled={authLoading}
+                >
+                  Create account
+                </button>
+              </div>
+              {registerInfo && <p className="status success">{registerInfo}</p>}
+              {registerError && <p className="status error">{registerError}</p>}
+            </>
+          )}
         </section>
       </div>
     );

@@ -1,4 +1,12 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+function normalizeApiBaseUrl(baseUrl) {
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  return normalizedBaseUrl.endsWith("/api")
+    ? `${normalizedBaseUrl}/v1`
+    : normalizedBaseUrl;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || "/api/v1");
+const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
 
 function getErrorMessage(payload, fallback) {
   if (!payload) return fallback;
@@ -19,8 +27,8 @@ async function parseResponse(response) {
   }
 }
 
-async function request(path, { token, headers, ...options } = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+async function request(path, { token, headers, baseUrl = API_BASE_URL, ...options } = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(headers || {})
@@ -64,6 +72,7 @@ export async function login({ email, password }) {
   body.set("password", password);
 
   return request("/login/access-token", {
+    baseUrl: AUTH_BASE_URL,
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body
@@ -72,6 +81,7 @@ export async function login({ email, password }) {
 
 export async function refreshAccessToken(refreshToken) {
   return request("/login/refresh-token", {
+    baseUrl: AUTH_BASE_URL,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken })
@@ -80,10 +90,36 @@ export async function refreshAccessToken(refreshToken) {
 
 export async function logout(refreshToken) {
   return request("/login/logout", {
+    baseUrl: AUTH_BASE_URL,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken })
   });
+}
+
+export async function sendRegistrationCode(email) {
+  return request("/register/send-code", {
+    baseUrl: AUTH_BASE_URL,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+}
+
+export async function registerUser({ email, password, confirmPassword, code, fullName }) {
+  const payload = await request("/register/", {
+    baseUrl: AUTH_BASE_URL,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      password,
+      confirm_password: confirmPassword,
+      code,
+      full_name: fullName || null
+    })
+  });
+  return normalizeUser(payload);
 }
 
 export async function fetchUsers(token) {
