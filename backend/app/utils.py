@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
+from email_validator import validate_email, EmailNotValidError
 
 password_hash = PasswordHash(
     (
@@ -39,3 +40,11 @@ def get_or_404(value, entity: str = "Resource"):
     if value is None:
         raise_not_found(entity)
     return value
+
+def validate_user_email(email: str) -> str:
+    try:
+        emailinfo = validate_email(email, check_deliverability=False)
+        return emailinfo.normalized
+    
+    except EmailNotValidError as e:
+        raise ValueError(str(e))

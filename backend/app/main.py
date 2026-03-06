@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import login, notes, users
+from app.api.routes import api_v1
 from app.core.config import settings
 from app.core.db import async_session, init_db
 
@@ -30,10 +30,7 @@ if settings.all_cors_origins:
         allow_headers=["*"],
     )
 
-app.include_router(login.router)
-app.include_router(notes.router)
-app.include_router(users.router)
-
+app.include_router(api_v1.router)
 
 @app.get("/healthz", tags=["health"])
 async def healthcheck() -> dict[str, str]:

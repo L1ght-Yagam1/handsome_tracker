@@ -68,3 +68,15 @@ class RefreshToken(SQLModel, table=True):
     revoked_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
 
     user: User | None = Relationship(back_populates="refresh_tokens")
+
+
+class EmailVerificationCode(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(index=True, nullable=False, max_length=255)
+    code_hash: str = Field(max_length=255)
+    used_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    expires_at: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore

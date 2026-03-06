@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import ConfigDict, EmailStr
+from pydantic import ConfigDict, EmailStr, model_validator
 from sqlmodel import Field, SQLModel
 
 
@@ -99,3 +99,22 @@ class UserChangePassword(SQLModel):
 
 class UserSetPassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class UserRegistation(SQLModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+    code: str = Field(min_length=6, max_length=6)
+    full_name: str | None = Field(default=None, max_length=255)
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def validate_passwords_match(self) -> "UserRegistation":
+        if self.password != self.confirm_password:
+            raise ValueError("Passwords do not match")
+        return self
+
+class RegisterSendCodeRequest(SQLModel):
+    email: EmailStr

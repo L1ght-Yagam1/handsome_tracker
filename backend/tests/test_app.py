@@ -11,6 +11,8 @@ from app.main import app
 from app.schemas import UserCreate
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+API_V1_PREFIX = "/api/v1"
+AUTH_PREFIX = f"{API_V1_PREFIX}/auth"
 test_engine = create_async_engine(TEST_DATABASE_URL, future=True)
 
 
@@ -47,7 +49,7 @@ def create_user_in_db(email: str, password: str, is_superuser: bool = False):
 
 def login(client: TestClient, email: str, password: str):
     return client.post(
-        "/login/access-token",
+        f"{AUTH_PREFIX}/login/access-token",
         data={"username": email, "password": password},
     )
 
@@ -84,20 +86,20 @@ def test_login_refresh_logout_flow():
     assert "refresh_token" in body
 
     refresh = body["refresh_token"]
-    resp = client.post("/login/refresh-token", json={"refresh_token": refresh})
+    resp = client.post(f"{AUTH_PREFIX}/login/refresh-token", json={"refresh_token": refresh})
     assert resp.status_code == 200
     body2 = resp.json()
     assert body2["refresh_token"] != refresh
 
     # Old refresh token should be revoked after rotation
-    resp = client.post("/login/refresh-token", json={"refresh_token": refresh})
+    resp = client.post(f"{AUTH_PREFIX}/login/refresh-token", json={"refresh_token": refresh})
     assert resp.status_code == 401
 
     # Logout revokes current refresh token
-    resp = client.post("/login/logout", json={"refresh_token": body2["refresh_token"]})
+    resp = client.post(f"{AUTH_PREFIX}/login/logout", json={"refresh_token": body2["refresh_token"]})
     assert resp.status_code == 204
     resp = client.post(
-        "/login/refresh-token",
+        f"{AUTH_PREFIX}/login/refresh-token",
         json={"refresh_token": body2["refresh_token"]}
     )
     assert resp.status_code == 401
@@ -111,20 +113,20 @@ def test_notes_scoped_to_current_user():
     token2 = login(client, "notes2@example.com", "password123").json()["access_token"]
 
     resp = client.post(
-        "/notes/",
+        f"{API_V1_PREFIX}/notes/",
         json={"title": "u1 note", "content": "u1 content"},
         headers=auth_headers(token1),
     )
     assert resp.status_code == 200
 
     resp = client.post(
-        "/notes/",
+        f"{API_V1_PREFIX}/notes/",
         json={"title": "u2 note", "content": "u2 content"},
         headers=auth_headers(token2),
     )
     assert resp.status_code == 200
 
-    resp = client.get("/notes/", headers=auth_headers(token1))
+    resp = client.get(f"{API_V1_PREFIX}/notes/", headers=auth_headers(token1))
     assert resp.status_code == 200
     data = resp.json()
     assert data["count"] == 1
@@ -138,24 +140,30 @@ def test_notes_favorite_flow():
     token = login(client, "fav@example.com", "password123").json()["access_token"]
 
     note_resp = client.post(
-        "/notes/",
+        f"{API_V1_PREFIX}/notes/",
         json={"title": "fav note", "content": "fav content"},
         headers=auth_headers(token),
     )
     assert note_resp.status_code == 200
     note_id = note_resp.json()["id"]
 
-    resp = client.post(f"/notes/{note_id}/favorite", headers=auth_headers(token))
+    resp = client.post(
+        f"{API_V1_PREFIX}/notes/{note_id}/favorite",
+        headers=auth_headers(token)
+    )
     assert resp.status_code == 200
     assert resp.json()["is_favorite"] is True
 
-    resp = client.get("/notes/", headers=auth_headers(token))
+    resp = client.get(f"{API_V1_PREFIX}/notes/", headers=auth_headers(token))
     assert resp.status_code == 200
     notes = resp.json()["notes"]
     assert len(notes) == 1
     assert notes[0]["is_favorite"] is True
 
-    resp = client.delete(f"/notes/{note_id}/favorite", headers=auth_headers(token))
+    resp = client.delete(
+        f"{API_V1_PREFIX}/notes/{note_id}/favorite",
+        headers=auth_headers(token)
+    )
     assert resp.status_code == 200
     assert resp.json()["is_favorite"] is False
 
@@ -172,20 +180,26 @@ def test_admin_can_access_user_notes_and_users_route():
 
     # create a note for the regular user
     resp = client.post(
-        "/notes/",
+        f"{API_V1_PREFIX}/notes/",
         json={"title": "user note", "content": "user content"},
         headers=auth_headers(user_token),
     )
     assert resp.status_code == 200
 
     # admin can read user notes
-    resp = client.get(f"/users/{user.id}/notes", headers=auth_headers(admin_token))
+    resp = client.get(
+        f"{API_V1_PREFIX}/users/{user.id}/notes",
+        headers=auth_headers(admin_token)
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["count"] == 1
 
     # regular user cannot access admin routes
-    resp = client.get("/users", headers=auth_headers(user_token))
+    resp = client.get(f"{API_V1_PREFIX}/users", headers=auth_headers(user_token))
     assert resp.status_code == 403
-    resp = client.get(f"/users/{user.id}/notes", headers=auth_headers(user_token))
+    resp = client.get(
+        f"{API_V1_PREFIX}/users/{user.id}/notes",
+        headers=auth_headers(user_token)
+    )
     assert resp.status_code == 403

@@ -46,3 +46,6 @@ def generate_refresh_token() -> str:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def hash_verification_code(code: str) -> str:
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()

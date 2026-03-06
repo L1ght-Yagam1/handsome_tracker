@@ -6,13 +6,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.db import async_session
 from app.core.security import decode_access_token
 from app.crud import user
 from app.models import User
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl="/login/access-token"
+    tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"
 )
 
 def raise_invalid_credentials() -> None:
