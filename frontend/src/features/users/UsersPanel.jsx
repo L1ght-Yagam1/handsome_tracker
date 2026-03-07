@@ -1,88 +1,74 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { PlusIcon } from "../../components/Icons";
+import { CreateUserModal } from "./components/CreateUserModal";
+import { UsersTable } from "./components/UsersTable";
 
 export function UsersPanel({ users, onAddUser, onDeleteUser, isBusy, error }) {
-  const [form, setForm] = useState({
-    email: "",
-    fullName: "",
-    password: "",
-    isSuperuser: false
-  });
-
-  const addUser = async () => {
-    const email = form.email.trim();
-    const password = form.password;
-    if (!email || !password) return;
-
-    await onAddUser({
-      email,
-      password,
-      fullName: form.fullName.trim(),
-      isSuperuser: form.isSuperuser
-    });
-    setForm({ email: "", fullName: "", password: "", isSuperuser: false });
-  };
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const activeUsersCount = useMemo(
+    () => users.filter((user) => user.isActive).length,
+    [users]
+  );
+  const adminsCount = useMemo(
+    () => users.filter((user) => user.isSuperuser).length,
+    [users]
+  );
 
   return (
-    <section className="panel">
-      <h2 className="panel-title">Users</h2>
-      <div className="users-row">
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-          disabled={isBusy}
-        />
-        <input
-          type="text"
-          placeholder="Full name"
-          value={form.fullName}
-          onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
-          disabled={isBusy}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-          disabled={isBusy}
-        />
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={form.isSuperuser}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, isSuperuser: event.target.checked }))
-            }
+    <section className="users-page">
+      <div className="users-hero panel">
+        <div>
+          <p className="eyebrow">Administration</p>
+          <h2 className="page-title users-page-title">Users</h2>
+          <p className="subtle users-page-subtitle">
+            Manage accounts, permissions and access from a separate admin workspace.
+          </p>
+        </div>
+
+        <div className="users-hero-actions">
+          <div className="users-summary-card">
+            <span className="users-summary-value">{users.length}</span>
+            <span className="users-summary-label">total accounts</span>
+          </div>
+          <div className="users-summary-card">
+            <span className="users-summary-value">{activeUsersCount}</span>
+            <span className="users-summary-label">active users</span>
+          </div>
+          <div className="users-summary-card">
+            <span className="users-summary-value">{adminsCount}</span>
+            <span className="users-summary-label">admins</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary users-add-btn"
+            onClick={() => setIsCreateModalOpen(true)}
             disabled={isBusy}
-          />
-          Superuser
-        </label>
-        <button onClick={addUser} type="button" className="btn btn-primary" disabled={isBusy}>
-          Add user
-        </button>
+          >
+            <PlusIcon className="btn-icon" />
+            Add User
+          </button>
+        </div>
       </div>
+
       {error && <p className="status error">{error}</p>}
 
-      <ul className="list users-list">
-        {users.map((user) => (
-          <li key={user.id} className="list-item user-item">
-            <span>
-              <strong>{user.email}</strong>
-              {user.fullName ? ` (${user.fullName})` : ""}{" "}
-              {!user.isActive ? "[inactive]" : ""} {user.isSuperuser ? "[admin]" : ""}
-            </span>
-            <button
-              onClick={() => onDeleteUser(user.id)}
-              type="button"
-              className="btn btn-ghost"
-              disabled={isBusy}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="panel users-table-panel">
+        <div className="section-head users-table-head">
+          <div>
+            <h3 className="section-title">Directory</h3>
+            <p className="subtle">Separate viewing from actions to keep admin flows predictable.</p>
+          </div>
+        </div>
+
+        <UsersTable users={users} onDeleteUser={onDeleteUser} isBusy={isBusy} />
+      </div>
+
+      <CreateUserModal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreateUser={onAddUser}
+        isBusy={isBusy}
+      />
     </section>
   );
 }

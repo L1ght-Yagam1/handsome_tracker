@@ -26,7 +26,7 @@ function isMarkActive(editor, markName) {
   return selection.$from.marks().some((mark) => mark.type.name === markName);
 }
 
-export function RichTextEditor({ value, onChange, isBusy }) {
+export function RichTextEditor({ value, onChange, isBusy, className = "" }) {
   const normalizedValue = ensureEditorHtml(value);
 
   const editor = useEditor({
@@ -68,8 +68,10 @@ export function RichTextEditor({ value, onChange, isBusy }) {
 
   if (!editor) return null;
 
+  const wrapperClassName = className ? `rte-wrap ${className}` : "rte-wrap";
+
   return (
-    <div className="rte-wrap">
+    <div className={wrapperClassName}>
       <div className="rte-toolbar">
         <ToolbarButton
           label="Undo"

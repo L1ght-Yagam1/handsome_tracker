@@ -98,6 +98,17 @@ export function XIcon({ className = "icon" }) {
   );
 }
 
+export function TrashIcon({ className = "icon" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M4.5 7h15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9.5 3.8h5l.8 2.2H8.7l.8-2.2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M7 7l.7 11.2a2 2 0 0 0 2 1.8h4.6a2 2 0 0 0 2-1.8L17 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M10 10.5v5.2M14 10.5v5.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function CalendarIcon({ className = "icon" }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
