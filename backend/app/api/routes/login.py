@@ -57,45 +57,19 @@ async def refresh_access_token(
     db: SessionDep,
 ):
     refresh_token_hash = hash_token(payload.refresh_token)
-    db_token = await refresh_token_crud.get_refresh_token_by_hash(
-        db,
-        refresh_token_hash
-    )
-
-    if not db_token:
+    rotated = await refresh_token_crud.rotate_refresh_token(db, refresh_token_hash)
+    if not rotated:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            detail="Refresh token already used or invalid"
         )
 
-    now = get_datetime_utc()
-    expires_at = db_token.expires_at
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=now.tzinfo)
-    if db_token.revoked_at is not None or expires_at < now:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired"
-        )
-
-    user_id = db_token.user_id
-    await refresh_token_crud.revoke_refresh_token(db, db_token)
-
-    new_refresh_token = generate_refresh_token()
-    new_refresh_hash = hash_token(new_refresh_token)
-    refresh_expires = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    await refresh_token_crud.create_refresh_token(
-        db,
-        user_id=user_id,
-        token_hash=new_refresh_hash,
-        expires_at=refresh_expires,
-    )
-
-    access_token = create_access_token(subject=user_id)
+    access_token = create_access_token(subject=rotated["user_id"])
+    
     return schemas.TokenWithRefresh(
         access_token=access_token,
         token_type="bearer",
-        refresh_token=new_refresh_token,
+        refresh_token=rotated["refresh_token"],
     )
 
 
@@ -105,6 +79,7 @@ async def logout(
     db: SessionDep,
 ):
     refresh_token_hash = hash_token(payload.refresh_token)
+    
     db_token = await refresh_token_crud.get_refresh_token_by_hash(
         db,
         refresh_token_hash
