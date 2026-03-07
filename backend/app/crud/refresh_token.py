@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import select, update
 
 from app.models import RefreshToken
 from app.utils import get_datetime_utc
@@ -37,3 +37,21 @@ async def revoke_refresh_token(session: AsyncSession, db_token: RefreshToken):
         await session.commit()
         await session.refresh(db_token)
     return db_token
+
+async def consume_refresh_token(session: AsyncSession, token_hash: str):
+    now = get_datetime_utc()
+
+    statement = (
+        update(RefreshToken)
+        .where(
+            RefreshToken.token_hash == token_hash, 
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > now,
+        )
+        .values(consumed_at=now)
+        .returning(RefreshToken)
+    )
+
+    result = await session.execute(statement)
+    await session.commit()
+    return result.scalar_one_or_none()
