@@ -17,6 +17,8 @@ async def register_user(
         return await register_service.register_user(db, payload)
     except register_service.UserAlreadyExistsError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+    except register_service.CodeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.post("/send-code")

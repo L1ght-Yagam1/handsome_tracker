@@ -6,3 +6,6 @@ class UserAlreadyExistsError(AppError):
 
 class InvalidVerificationCodeError(AppError):
     pass
+
+class CodeNotFoundError(AppError):
+    pass
