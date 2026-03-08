@@ -28,6 +28,15 @@ class User(UserBase, table=True):
     )
 
     notes: list["Note"] = Relationship(back_populates="owner", cascade_delete=True)
+    auth_identities: list["AuthIdentity"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    local_credentials: "LocalCredentials" = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"uselist": False},
+        cascade_delete=True,
+    )
     favorite_notes: list["Note"] = Relationship(
         back_populates="favorited_by",
         link_model=FavoriteNoteLink,
@@ -81,3 +90,26 @@ class EmailVerificationCode(SQLModel, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     expires_at: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
+
+class AuthIdentity(SQLModel, table=True):
+    __tablename__ = "auth_identity"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
+    provider: str = Field(nullable=False, max_length=100)
+    provider_user_id: str = Field(nullable=False, max_length=255)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    user: User | None = Relationship(back_populates="auth_identities")
+
+class LocalCredentials(SQLModel, table=True):
+    __tablename__ = "local_credentials"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
+    password_hash: str = Field(nullable=False, max_length=255)
+
+    user: User | None = Relationship(back_populates="local_credentials")
