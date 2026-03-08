@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
+    GOOGLE_AUTH_URL: str = ""
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+    SECRET_KEY_GOOGLE: str = ""
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

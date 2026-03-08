@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.routes import login, register
+from app.api.routes import login, register, google
 
 
 
@@ -7,3 +7,4 @@ router = APIRouter(prefix="/auth")
 
 router.include_router(login.router)
 router.include_router(register.router)
+router.include_router(google.router)

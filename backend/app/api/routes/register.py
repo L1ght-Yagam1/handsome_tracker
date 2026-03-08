@@ -31,4 +31,3 @@ async def send_code(
         return await register_service.prepare_verification_code(db, payload.email, background_tasks)
     except register_service.InvalidVerificationCodeError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-
